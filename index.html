@@ -460,7 +460,7 @@
             color: var(--primary-color);
         }
 
-        .modal {
+       .modal {
             display: none;
             position: fixed;
             z-index: 1000;
@@ -474,17 +474,24 @@
 
         .modal-content {
             background-color: var(--light-text);
-            margin: 5% auto;
-            padding: 40px;
+            margin: 15px auto;
+            padding: 20px;
             border: none;
             width: 90%;
-            max-width: 500px;
+            max-width: 400px;
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            position: absolute;
+            position: relative;
             top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            transform: translateY(-50%);
+        }
+
+        @media (max-width: 768px) {
+            .modal-content {
+                width: 95%;
+                margin: 10px auto;
+                padding: 15px;
+            }
         }
 
         .close {
@@ -894,7 +901,7 @@
             </div>
         </div>
     </footer>
-<script src="https://js.stripe.com/v3/"></script>
+ <script src="https://js.stripe.com/v3/"></script>
     <script>
         var stripe = Stripe('pk_live_51PyoMYP7fSkg7wFI34x9OxzjnbIWi72zm7tboGTQVqw3qCRwy0aw5OzCdnTBIVNd7NPPj6TE8r7yNrmnYcDug98h00DRE26cjv');
         var elements = stripe.elements();
@@ -911,11 +918,14 @@
                 var pack = this.getAttribute('data-pack');
                 updateCheckoutContent(pack);
                 
-                var rect = event.target.getBoundingClientRect();
+                // Position the modal just above the pricing section
+                var rect = document.querySelector('.products.section').getBoundingClientRect();
                 var modalContent = modal.querySelector('.modal-content');
-                modalContent.style.top = (rect.top + window.scrollY) + 'px';
-                modalContent.style.left = rect.left + 'px';
+                modalContent.style.top = (rect.top + window.scrollY - 20) + 'px';
                 modalContent.style.transform = 'none';
+                
+                // Scroll to the modal
+                modalContent.scrollIntoView({behavior: 'smooth', block: 'start'});
             }
         }
 
@@ -1036,6 +1046,14 @@
                 document.getElementById('submit-payment').disabled = false;
             }
         }
+ // Adjust modal position on window resize
+        window.addEventListener('resize', function() {
+            if (modal.style.display === "block") {
+                var rect = document.querySelector('.products.section').getBoundingClientRect();
+                var modalContent = modal.querySelector('.modal-content');
+                modalContent.style.top = (rect.top + window.scrollY - 20) + 'px';
+            }
+        });
 
     document.getElementById('apply-promo').addEventListener('click', function() {
         var promoCode = document.getElementById('promo-code-input').value;
