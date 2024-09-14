@@ -478,9 +478,13 @@
             padding: 40px;
             border: none;
             width: 90%;
-            max-width: 600px;
+            max-width: 500px;
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
         }
 
         .close {
@@ -499,6 +503,52 @@
 
         #stripe-checkout {
             margin-top: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        #card-element {
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        #submit-payment {
+            background-color: var(--primary-color);
+            color: var(--light-text);
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        #submit-payment:hover {
+            background-color: var(--accent-color);
+            transform: translateY(-3px);
         }
 
         .promo-code {
@@ -777,7 +827,6 @@
             </div>
         </section>
 
-        
     <div id="checkout-modal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
@@ -846,121 +895,147 @@
         </div>
     </footer>
 <script src="https://js.stripe.com/v3/"></script>
-<script>
-    var stripe = Stripe('pk_test_YOUR_TEST_PUBLISHABLE_KEY');
-    var elements = stripe.elements();
-    var card;
-    var selectedPack;
+    <script>
+        var stripe = Stripe('pk_live_51PyoMYP7fSkg7wFI34x9OxzjnbIWi72zm7tboGTQVqw3qCRwy0aw5OzCdnTBIVNd7NPPj6TE8r7yNrmnYcDug98h00DRE26cjv');
+        var elements = stripe.elements();
+        var card;
+        var selectedPack;
 
-    var modal = document.getElementById("checkout-modal");
-    var buttons = document.getElementsByClassName("buy-btn");
-    var span = document.getElementsByClassName("close")[0];
+        var modal = document.getElementById("checkout-modal");
+        var buttons = document.getElementsByClassName("buy-btn");
+        var span = document.getElementsByClassName("close")[0];
 
-    for (var i = 0; i < buttons.length; i++) {
-        buttons[i].onclick = function(event) {
-            modal.style.display = "block";
-            var pack = this.getAttribute('data-pack');
-            updateCheckoutContent(pack);
-            
-            var rect = event.target.getBoundingClientRect();
-            var modalContent = modal.querySelector('.modal-content');
-            modalContent.style.position = 'absolute';
-            modalContent.style.top = (rect.bottom + window.scrollY) + 'px';
-            modalContent.style.left = rect.left + 'px';
+        for (var i = 0; i < buttons.length; i++) {
+            buttons[i].onclick = function(event) {
+                modal.style.display = "block";
+                var pack = this.getAttribute('data-pack');
+                updateCheckoutContent(pack);
+                
+                var rect = event.target.getBoundingClientRect();
+                var modalContent = modal.querySelector('.modal-content');
+                modalContent.style.top = (rect.top + window.scrollY) + 'px';
+                modalContent.style.left = rect.left + 'px';
+                modalContent.style.transform = 'none';
+            }
         }
-    }
 
-    span.onclick = function() {
-        modal.style.display = "none";
-    }
-
-    window.onclick = function(event) {
-        if (event.target == modal) {
+        span.onclick = function() {
             modal.style.display = "none";
         }
-    }
 
-    function updateCheckoutContent(pack) {
-        var packDetails = {
-            single: { name: "Single Bottle", price: 12.99 },
-            triple: { name: "Triple Threat", price: 34.99 },
-            sixpack: { name: "Six Pack Inferno", price: 64.99 }
-        };
-
-        selectedPack = packDetails[pack];
-        var checkoutContent = `
-            <h3>${selectedPack.name}</h3>
-            <p>Price: $${selectedPack.price}</p>
-            <div id="card-element"></div>
-            <div id="card-errors" role="alert"></div>
-            <button id="submit-payment">Pay Now</button>
-        `;
-
-        document.getElementById('stripe-checkout').innerHTML = checkoutContent;
-
-        card = elements.create('card');
-        card.mount('#card-element');
-
-        var form = document.getElementById('submit-payment');
-        form.addEventListener('click', function(event) {
-            event.preventDefault();
-            form.disabled = true;
-            createPaymentIntent();
-        });
-    }
-
-    async function createPaymentIntent() {
-        try {
-            const response = await fetch('/.netlify/functions/create-payment-intent', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    amount: Math.round(selectedPack.price * 100),
-                }),
-            });
-            const data = await response.json();
-            
-            if (data.clientSecret) {
-                confirmPayment(data.clientSecret);
-            } else {
-                throw new Error('Failed to create payment intent');
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
             }
-        } catch (error) {
-            console.error('Error:', error);
-            document.getElementById('card-errors').textContent = 'An error occurred. Please try again.';
-            document.getElementById('submit-payment').disabled = false;
         }
-    }
 
-    async function confirmPayment(clientSecret) {
-        try {
-            const result = await stripe.confirmCardPayment(clientSecret, {
-                payment_method: {
-                    card: card,
-                    billing_details: {
-                        name: 'Customer Name', // You might want to collect this from the user
+        function updateCheckoutContent(pack) {
+            var packDetails = {
+                single: { name: "Single Bottle", price: 12.99 },
+                triple: { name: "Triple Threat", price: 34.99 },
+                sixpack: { name: "Six Pack Inferno", price: 64.99 }
+            };
+
+            selectedPack = packDetails[pack];
+            var checkoutContent = `
+                <h3>${selectedPack.name}</h3>
+                <p>Price: $${selectedPack.price}</p>
+                <form id="payment-form">
+                    <div class="form-group">
+                        <label for="name">Full Name</label>
+                        <input type="text" id="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Phone Number</label>
+                        <input type="tel" id="phone" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="address">Shipping Address</label>
+                        <input type="text" id="address" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="card-element">Credit or debit card</label>
+                        <div id="card-element"></div>
+                    </div>
+                    <div id="card-errors" role="alert"></div>
+                    <button id="submit-payment">Pay Now</button>
+                </form>
+            `;
+
+            document.getElementById('stripe-checkout').innerHTML = checkoutContent;
+
+            card = elements.create('card');
+            card.mount('#card-element');
+
+            var form = document.getElementById('payment-form');
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+                document.getElementById('submit-payment').disabled = true;
+                createPaymentIntent();
+            });
+        }
+
+        async function createPaymentIntent() {
+            try {
+                const response = await fetch('/.netlify/functions/create-payment-intent', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
                     },
-                },
-            });
-
-            if (result.error) {
-                document.getElementById('card-errors').textContent = result.error.message;
-            } else {
-                if (result.paymentIntent.status === 'succeeded') {
-                    console.log('Payment successful!');
-                    alert('Payment processed successfully!');
-                    modal.style.display = "none";
+                    body: JSON.stringify({
+                        amount: Math.round(selectedPack.price * 100),
+                    }),
+                });
+                const data = await response.json();
+                
+                if (data.clientSecret) {
+                    confirmPayment(data.clientSecret);
+                } else {
+                    throw new Error('Failed to create payment intent');
                 }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('card-errors').textContent = 'An error occurred. Please try again.';
+                document.getElementById('submit-payment').disabled = false;
             }
-        } catch (error) {
-            console.error('Error:', error);
-            document.getElementById('card-errors').textContent = 'An error occurred. Please try again.';
-        } finally {
-            document.getElementById('submit-payment').disabled = false;
         }
-    }
+
+        async function confirmPayment(clientSecret) {
+            try {
+                const result = await stripe.confirmCardPayment(clientSecret, {
+                    payment_method: {
+                        card: card,
+                        billing_details: {
+                            name: document.getElementById('name').value,
+                            email: document.getElementById('email').value,
+                            phone: document.getElementById('phone').value,
+                            address: {
+                                line1: document.getElementById('address').value,
+                            }
+                        },
+                    },
+                });
+
+                if (result.error) {
+                    document.getElementById('card-errors').textContent = result.error.message;
+                } else {
+                    if (result.paymentIntent.status === 'succeeded') {
+                        console.log('Payment successful!');
+                        alert('Payment processed successfully!');
+                        modal.style.display = "none";
+                    }
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('card-errors').textContent = 'An error occurred. Please try again.';
+            } finally {
+                document.getElementById('submit-payment').disabled = false;
+            }
+        }
 
     document.getElementById('apply-promo').addEventListener('click', function() {
         var promoCode = document.getElementById('promo-code-input').value;
