@@ -989,30 +989,35 @@
             });
         }
 
-        async function createPaymentIntent() {
-            try {
-                const response = await fetch('/.netlify/functions/create-payment-intent', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        amount: Math.round(selectedPack.price * 100),
-                    }),
-                });
-                const data = await response.json();
-                
-                if (data.clientSecret) {
-                    confirmPayment(data.clientSecret);
-                } else {
-                    throw new Error('Failed to create payment intent');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('card-errors').textContent = 'An error occurred. Please try again.';
-                document.getElementById('submit-payment').disabled = false;
-            }
+async function createPaymentIntent() {
+    try {
+        const response = await fetch('https://jovial-gelato-def0fd.netlify.app/.netlify/functions/create-payment-intent', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                amount: Math.round(selectedPack.price * 100), // Ensure amount is in cents
+            }),
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
+        
+        const data = await response.json();
+        
+        if (data.clientSecret) {
+            confirmPayment(data.clientSecret);
+        } else {
+            throw new Error('Failed to create payment intent: No client secret received');
+        }
+    } catch (error) {
+        console.error('Error creating payment intent:', error);
+        document.getElementById('card-errors').textContent = `Error: ${error.message}`;
+        document.getElementById('submit-payment').disabled = false;
+    }
+}
 
         async function confirmPayment(clientSecret) {
             try {
