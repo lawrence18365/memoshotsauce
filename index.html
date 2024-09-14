@@ -777,23 +777,25 @@
             </div>
         </section>
 
-        <div id="checkout-modal" class="modal">
-            <div class="modal-content">
-                <span class="close">&times;</span>
-                <h2>Secure Checkout</h2>
-                <div id="stripe-checkout"></div>
-                <div class="promo-code">
-                    <input type="text" id="promo-code-input" placeholder="Enter promo code">
-                    <button id="apply-promo" class="btn btn-secondary">Apply</button>
-                </div>
-                <div class="trust-icons">
-                    <i class="fab fa-cc-visa"></i>
-                    <i class="fab fa-cc-mastercard"></i>
-                    <i class="fab fa-cc-amex"></i>
-                    <i class="fab fa-cc-paypal"></i>
-                </div>
+        
+    <div id="checkout-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Secure Checkout</h2>
+            <div id="stripe-checkout"></div>
+            <div class="promo-code">
+                <input type="text" id="promo-code-input" placeholder="Enter promo code">
+                <button id="apply-promo" class="btn btn-secondary">Apply</button>
+            </div>
+            <div class="trust-icons">
+                <i class="fab fa-cc-visa"></i>
+                <i class="fab fa-cc-mastercard"></i>
+                <i class="fab fa-cc-amex"></i>
+                <i class="fab fa-cc-paypal"></i>
             </div>
         </div>
+    </div>
+
     </main>
 
     <footer id="contact">
@@ -846,7 +848,7 @@
 
     <script src="https://js.stripe.com/v3/"></script>
     <script>
-        var stripe = Stripe('your_publishable_key');
+        var stripe = Stripe('pk_live_51PyoMYP7fSkg7wFI34x9OxzjnbIWi72zm7tboGTQVqw3qCRwy0aw5OzCdnTBIVNd7NPPj6TE8r7yNrmnYcDug98h00DRE26cjv');
         var elements = stripe.elements();
 
         var modal = document.getElementById("checkout-modal");
@@ -854,10 +856,17 @@
         var span = document.getElementsByClassName("close")[0];
 
         for (var i = 0; i < buttons.length; i++) {
-            buttons[i].onclick = function() {
+            buttons[i].onclick = function(event) {
                 modal.style.display = "block";
                 var pack = this.getAttribute('data-pack');
                 updateCheckoutContent(pack);
+                
+                // Position the modal near the clicked button
+                var rect = event.target.getBoundingClientRect();
+                var modalContent = modal.querySelector('.modal-content');
+                modalContent.style.position = 'absolute';
+                modalContent.style.top = (rect.bottom + window.scrollY) + 'px';
+                modalContent.style.left = rect.left + 'px';
             }
         }
 
@@ -882,9 +891,34 @@
             var checkoutContent = `
                 <h3>${selectedPack.name}</h3>
                 <p>Price: $${selectedPack.price}</p>
+                <div id="card-element"></div>
+                <button id="submit-payment">Pay Now</button>
             `;
 
             document.getElementById('stripe-checkout').innerHTML = checkoutContent;
+
+            var card = elements.create('card');
+            card.mount('#card-element');
+
+            var form = document.getElementById('submit-payment');
+            form.addEventListener('click', function(event) {
+                event.preventDefault();
+
+                stripe.createToken(card).then(function(result) {
+                    if (result.error) {
+                        var errorElement = document.getElementById('card-errors');
+                        errorElement.textContent = result.error.message;
+                    } else {
+                        stripeTokenHandler(result.token);
+                    }
+                });
+            });
+        }
+
+        function stripeTokenHandler(token) {
+            // Here you would typically send the token to your server
+            console.log('Payment token:', token);
+            alert('Payment processed successfully!');
         }
 
         document.getElementById('apply-promo').addEventListener('click', function() {
